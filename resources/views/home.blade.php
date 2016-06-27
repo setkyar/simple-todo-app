@@ -2,6 +2,7 @@
 <html lang="en">
 <head>
 	<meta charset="UTF-8">
+	<meta id="token" value="{{ csrf_token() }}"> 
 	<title>Todo</title>
 	<link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.6/css/bootstrap.min.css">
 </head>
@@ -28,7 +29,7 @@
 				    		<li v-for="task in tasks">
 						    	<span>@{{ task.description }}</span>
 						    	<br/>
-						      	<button class="btn-xs btn-danger" v-on:click="removeTask($index)">Delete</button>
+						      	<button class="btn-xs btn-danger" v-on:click="removeTask($index, task.id)">Delete</button>
 						    </li>
 				    	</ul>
 				    	<h3 v-else>
@@ -54,11 +55,15 @@
 		</div>
 	</div>
 
-	<script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.0.0/jquery.min.js"></script>
+	<script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/2.2.4/jquery.min.js"></script>
 	<script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.6/js/bootstrap.min.js"></script>
 	<script src="http://cdnjs.cloudflare.com/ajax/libs/vue/1.0.25/vue.min.js"></script>
+	<script src="https://cdnjs.cloudflare.com/ajax/libs/vue-resource/0.9.1/vue-resource.min.js"></script>
 	<script>
 		//Our JS Code Will be On Here!
+		Vue.http.headers.common['X-CSRF-TOKEN'] = document.querySelector('#token').getAttribute('value');
+		Vue.config.debug = true;
+
 		new Vue({
 			el: '#app',
 
@@ -73,31 +78,55 @@
 
 			methods: {
 				fetchTasks: function() {
-				    var tasks = [
-				      	{
-					        id: 1,
-					        description: 'Write article',
-				      	},
-				      	{
-				        	id: 2,
-				        	description: 'Learn something new',
-				      	},
-				      	{
-				        	id: 3,
-				        	description: 'Read article',
-				      	}
-				    ];
-				    this.$set('tasks', tasks);
+				    // var tasks = [
+				    //   	{
+						  //     id: 1,
+						  //     description: 'Write article',
+				    //   	},
+				    //   	{
+				    // 	     	id: 2,
+				    // 	     	description: 'Learn something new',
+				    //   	},
+				    //   	{
+				    // 	     	id: 3,
+				    // 	     	description: 'Read article',
+				    //   	}
+				    // ];
+				    // this.$set('tasks', tasks);
+
+					this.$http.get('/tasks').then((tasks) => {
+						// success callback
+						this.$set('tasks', tasks.data);
+				    }, (error) => {
+				        // error callback
+				        console.log(error);
+				    });
 				},
 				addTask: function () {
 			      	if(this.task.description) {
-				      this.tasks.push(this.task);
-				      this.task = { description: '' };
+				      	// this.tasks.push(this.task);
+				      	// this.task = { description: '' };
+
+				      	this.$http.post('addtask', this.task).then((response) => {
+					        this.tasks.push(response.data);
+						  	this.task = { description: '' };
+
+						}, (error) => {
+					    	console.log(error);
+					    });
 				    }
 			    },
-				removeTask: function (index) {
+				removeTask: function (index, id) {
 					if(confirm("Are you sure you want to delete this task?")) {
-					    this.tasks.splice(index, 1);
+					    // this.tasks.splice(index, 1);
+
+					    this.$http.delete('/deletetask/' + id).then((response) => {
+							// success callback
+							this.tasks.splice(index, 1);
+					    }, (error) => {
+					        // error callback
+					        console.log(error);
+					    });
 					}
 			    }
 			}
